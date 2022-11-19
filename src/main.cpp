@@ -83,13 +83,17 @@ void MyFrame::DownloadData()
                 }
                 else
                 {
-                    wxMessageBox("Could not read file.", "Error", wxICON_ERROR);
+                    CallAfter([]()
+                              { wxMessageBox("Could not read file.", "Error", wxICON_ERROR); });
                 }
             }
         }
         else
         {
-            wxMessageBox("Could not connect to the server.", "Error", wxICON_ERROR);
+            CallAfter([]()
+                      {
+                          wxMessageBox("Could not connect to the server.", "Error", wxICON_ERROR);
+                      });
         }
 
         ftp.Close();
