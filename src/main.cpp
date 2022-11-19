@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <thread>
 
 #include "rapidcsv.h"
 
@@ -24,6 +25,8 @@ wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
+    wxSocketBase::Initialize();
+
     MyFrame *frame = new MyFrame("Hello World", wxDefaultPosition, wxDefaultSize);
     frame->Show(true);
     return true;
@@ -40,52 +43,58 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
 
 void MyFrame::DownloadData()
 {
-    wxFTP ftp;
-
-    ftp.Connect("ftp.nasdaqtrader.com");
-    if (ftp.IsConnected())
+    auto f = [this]()
     {
-        std::vector<std::string> filenames = {"nasdaqlisted.txt", "otherlisted.txt"};
+        wxFTP ftp;
 
-        ftp.ChDir("/SymbolDirectory");
-
-        for (const auto &fname : filenames)
+        ftp.Connect("ftp.nasdaqtrader.com");
+        if (ftp.IsConnected())
         {
-            wxInputStream *in = ftp.GetInputStream(fname);
-            std::stringstream stream;
+            std::vector<std::string> filenames = {"nasdaqlisted.txt", "otherlisted.txt"};
 
-            if (in)
+            ftp.ChDir("/SymbolDirectory");
+
+            for (const auto &fname : filenames)
             {
-                static constexpr size_t size = 65536;
-                char data[size];
-                do
-                {
-                    in->Read(data, size);
-                    stream << data;
-                } while (in->LastRead() > 0);
+                wxInputStream *in = ftp.GetInputStream(fname);
+                std::stringstream stream;
 
-                rapidcsv::Document doc(stream,
-                                       rapidcsv::LabelParams(),
-                                       rapidcsv::SeparatorParams('|'));
-
-                for (int i = 0; i < doc.GetRowCount() - 1; i++)
+                if (in)
                 {
-                    auto v = doc.GetRow<std::string>(i);
-                    std::cout << "Symbol: " << v[0] << ", name: " << v[1] << std::endl;
+                    static constexpr size_t size = 65536;
+                    char data[size];
+                    do
+                    {
+                        in->Read(data, size);
+                        stream << data;
+                    } while (in->LastRead() > 0);
+
+                    rapidcsv::Document doc(stream,
+                                           rapidcsv::LabelParams(),
+                                           rapidcsv::SeparatorParams('|'));
+
+                    for (int i = 0; i < doc.GetRowCount() - 1; i++)
+                    {
+                        auto v = doc.GetRow<std::string>(i);
+                        std::cout << "Symbol: " << v[0] << ", name: " << v[1] << std::endl;
+                    }
+
+                    delete in;
                 }
-
-                delete in;
-            }
-            else
-            {
-                wxMessageBox("Could not read file.", "Error", wxICON_ERROR);
+                else
+                {
+                    wxMessageBox("Could not read file.", "Error", wxICON_ERROR);
+                }
             }
         }
-    }
-    else
-    {
-        wxMessageBox("Could not connect to the server.", "Error", wxICON_ERROR);
-    }
+        else
+        {
+            wxMessageBox("Could not connect to the server.", "Error", wxICON_ERROR);
+        }
 
-    ftp.Close();
+        ftp.Close();
+    };
+
+    std::thread t{f};
+    t.detach();
 }
