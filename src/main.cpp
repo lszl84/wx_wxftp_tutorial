@@ -7,6 +7,9 @@
 
 #include "rapidcsv.h"
 
+#include "stock.h"
+#include "stockslistcontrol.h"
+
 class MyApp : public wxApp
 {
 public:
@@ -18,6 +21,7 @@ public:
     MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size);
 
 private:
+    StocksListControl *stockList;
     void DownloadData();
 };
 
@@ -38,6 +42,12 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     CreateStatusBar();
     SetStatusText("Welcome to wxWidgets!");
 
+    auto sizer = new wxBoxSizer(wxHORIZONTAL);
+    stockList = new StocksListControl(this, wxID_ANY, wxDefaultPosition, FromDIP(wxSize(800, 600)));
+    sizer->Add(stockList, 1, wxEXPAND);
+
+    SetSizerAndFit(sizer);
+
     DownloadData();
 }
 
@@ -45,6 +55,7 @@ void MyFrame::DownloadData()
 {
     auto f = [this]()
     {
+        std::vector<Stock> stocks;
         wxFTP ftp;
 
         ftp.Connect("ftp.nasdaqtrader.com");
@@ -77,6 +88,8 @@ void MyFrame::DownloadData()
                     {
                         auto v = doc.GetRow<std::string>(i);
                         std::cout << "Symbol: " << v[0] << ", name: " << v[1] << std::endl;
+
+                        stocks.push_back({v[0], v[1]});
                     }
 
                     delete in;
@@ -91,10 +104,17 @@ void MyFrame::DownloadData()
         else
         {
             CallAfter([]()
-                      {
-                          wxMessageBox("Could not connect to the server.", "Error", wxICON_ERROR);
-                      });
+                      { wxMessageBox("Could not connect to the server.", "Error", wxICON_ERROR); });
         }
+
+        std::sort(stocks.begin(), stocks.end(), [](const Stock &lhs, const Stock &rhs)
+                  { return lhs.symbol < rhs.symbol; });
+
+        CallAfter([this, stocks]()
+                  {
+                      stockList->items = stocks;
+                      stockList->RefreshAfterUpdate();
+                  });
 
         ftp.Close();
     };
