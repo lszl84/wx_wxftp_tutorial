@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iostream>
 
+#include "rapidcsv.h"
+
 class MyApp : public wxApp
 {
 public:
@@ -62,14 +64,22 @@ void MyFrame::DownloadData()
                     stream << data;
                 } while (in->LastRead() > 0);
 
+                rapidcsv::Document doc(stream,
+                                       rapidcsv::LabelParams(),
+                                       rapidcsv::SeparatorParams('|'));
+
+                for (int i = 0; i < doc.GetRowCount() - 1; i++)
+                {
+                    auto v = doc.GetRow<std::string>(i);
+                    std::cout << "Symbol: " << v[0] << ", name: " << v[1] << std::endl;
+                }
+
                 delete in;
             }
             else
             {
                 wxMessageBox("Could not read file.", "Error", wxICON_ERROR);
             }
-
-            std::cout << stream.str() << std::endl;
         }
     }
     else
