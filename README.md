@@ -1,3 +1,7 @@
 # wx_wxftp_tutorial
 
-Using wxFTP in wxWidgets. See the full FREE course at: https://www.youtube.com/watch?v=MfuBS9n5_aY&list=PL0qQTroQZs5vVmTuBew-nTx9DIu6rRl2c
+Using wxFTP in wxWidgets to download the full list of US Stocks from NASDAQ server. See the [YouTube tutorial](https://www.youtube.com/watch?v=xah_tsDTN-M) for details.
+
+---
+Check out the blog for more! [www.justdevtutorials.com](https://www.justdevtutorials.com)
+---
